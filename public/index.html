@@ -1013,7 +1013,7 @@ function renderAllocation() {
       <div class="weight-pcts">
         <span style="color:${color}">${fmt(actual)}%</span>
         <span style="color:var(--dim)"> / ${target}%</span>
-        <span style="color:${diff>5?'var(--gold2)':diff<-5?'var(--red2)':'var(--muted)';font-size:10px"> ${diff>=0?'+':''}${fmt(diff)}%</span>
+        <span style="color:${diff>5?'var(--gold2)':diff<-5?'var(--red2)':'var(--muted)'}"> ${diff>=0?'+':''}${fmt(diff)}%</span>
       </div>
     </div>`;
   }).join('');
