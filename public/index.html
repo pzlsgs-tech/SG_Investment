@@ -978,16 +978,11 @@ function renderHoldings() {
     </tr>`;
   }).join('');
 
-  document.getElementById('holdings-table').innerHTML = \`
-    <div class="holdings-wrap">
-      <table class="h-table">
-        <thead><tr>
-          <th>股票</th><th>持仓量</th><th>均价 SGD</th><th>现价</th>
-          <th>市值 SGD</th><th>投入 SGD</th><th>盈亏</th><th>权重</th>
-        </tr></thead>
-        <tbody>\${rows}</tbody>
-      </table>
-    </div>\`;
+  document.getElementById('holdings-table').innerHTML =
+    '<div class="holdings-wrap"><table class="h-table"><thead><tr>' +
+    '<th>股票</th><th>持仓量</th><th>均价 SGD</th><th>现价</th>' +
+    '<th>市值 SGD</th><th>投入 SGD</th><th>盈亏</th><th>权重</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 function renderAllocation() {
