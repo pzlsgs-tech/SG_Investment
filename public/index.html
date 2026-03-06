@@ -128,30 +128,26 @@ nav{
 }
 
 /* ── Holdings table ── */
-.holdings-wrap{background:var(--surface);border:2px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:32px}
-.holdings-head{
-  display:grid;
-  grid-template-columns:180px 80px 100px 100px 110px 110px 110px 80px;
-  padding:14px 24px;background:var(--surface2);border-bottom:1px solid var(--border);
+.holdings-wrap{background:var(--surface);border:2px solid var(--border);border-radius:14px;overflow-x:auto;margin-bottom:32px}
+.h-table{width:100%;border-collapse:collapse;min-width:860px}
+.h-table th{
+  font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;
+  color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+  padding:16px 20px;background:var(--surface2);
+  border-bottom:2px solid var(--border);text-align:left;white-space:nowrap;
 }
-.holdings-row{
-  display:grid;
-  grid-template-columns:180px 80px 100px 100px 110px 110px 110px 80px;
-  padding:20px 24px;border-bottom:1px solid var(--border);
-  align-items:center;transition:background .1s;
+.h-table td{
+  padding:20px 20px;border-bottom:1px solid var(--border);
+  vertical-align:middle;
 }
-.holdings-row:last-child{border-bottom:none}
-.holdings-row:hover{background:rgba(255,255,255,.015)}
-@media(max-width:1000px){
-  .holdings-head{display:none}
-  .holdings-row{grid-template-columns:1fr 1fr;gap:10px}
-}
+.h-table tr:last-child td{border-bottom:none}
+.h-table tr:hover td{background:rgba(255,255,255,.015)}
 .col-head{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
 .ticker-badge{
   display:inline-flex;align-items:center;gap:6px;
   font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--blue2);
 }
-.ticker-name{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.3}
+.ticker-name{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.3;white-space:normal;max-width:170px}
 .mono{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500}
 .up{color:var(--green2)}.dn{color:var(--red2)}
 
@@ -952,46 +948,46 @@ function renderHoldings() {
     return;
   }
 
-  const head = `<div class="holdings-wrap">
-    <div class="holdings-head">
-      <div class="col-head">股票</div>
-      <div class="col-head">持仓量</div>
-      <div class="col-head">均价 SGD</div>
-      <div class="col-head">现价</div>
-      <div class="col-head">市值 SGD</div>
-      <div class="col-head">投入 SGD</div>
-      <div class="col-head">盈亏</div>
-      <div class="col-head">权重</div>
-    </div>`;
-
   const rows = holdings.map(h => {
     const pnl    = h.mktValSGD - h.totalCostSGD;
     const pnlPct = h.totalCostSGD ? (pnl/h.totalCostSGD)*100 : 0;
     const wt     = totalMkt ? (h.mktValSGD/totalMkt)*100 : 0;
-    const sym    = h.currency==='USD' ? '$' : 'S$';
+    const sym    = h.currency==='USD' ? 'US$' : 'S$';
     const pos    = pnl >= 0;
-    return `<div class="holdings-row">
-      <div>
+    const sharesDisplay = h.shares % 1 === 0 ? fmt(h.shares,0) : fmt(h.shares,2);
+    return `<tr>
+      <td>
         <div class="ticker-badge">${h.ticker}</div>
         <div class="ticker-name">${h.name}</div>
-      </div>
-      <div class="mono">${fmt(h.shares,4)}</div>
-      <div class="mono">${fmtS(h.avgCostSGD)}</div>
-      <div>
-        <div class="mono" style="cursor:pointer" onclick="openModal('update-prices')" title="点击更新">${sym}${fmt(h.currentPrice,3)} ✎</div>
-        <div style="font-size:10px;color:var(--muted)">${h.currency}</div>
-      </div>
-      <div class="mono">${fmtS(h.mktValSGD)}</div>
-      <div class="mono">${fmtS(h.totalCostSGD)}</div>
-      <div>
-        <div class="mono ${pos?'up':'dn'}">${pos?'+':''}${fmtS(pnl)}</div>
-        <div style="font-size:11px;color:${pos?'var(--green2)':'var(--red2)'}">${pos?'+':''}${fmt(pnlPct)}%</div>
-      </div>
-      <div class="mono" style="color:var(--muted)">${fmt(wt)}%</div>
-    </div>`;
+      </td>
+      <td class="mono">${sharesDisplay}</td>
+      <td class="mono">${fmtS(h.avgCostSGD)}</td>
+      <td>
+        <div class="mono" style="cursor:pointer" onclick="openModal('update-prices')" title="点击更新">
+          ${sym}${fmt(h.currentPrice,3)} ✎
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px">${h.currency}</div>
+      </td>
+      <td class="mono">${fmtS(h.mktValSGD)}</td>
+      <td class="mono">${fmtS(h.totalCostSGD)}</td>
+      <td>
+        <div class="mono ${pos?'up':'dn'}" style="font-weight:700">${pos?'+':''}${fmtS(pnl)}</div>
+        <div style="font-size:14px;color:${pos?'var(--green2)':'var(--red2)'};margin-top:3px">${pos?'+':''}${fmt(pnlPct)}%</div>
+      </td>
+      <td class="mono" style="color:var(--muted)">${fmt(wt)}%</td>
+    </tr>`;
   }).join('');
 
-  document.getElementById('holdings-table').innerHTML = head + rows + '</div>';
+  document.getElementById('holdings-table').innerHTML = \`
+    <div class="holdings-wrap">
+      <table class="h-table">
+        <thead><tr>
+          <th>股票</th><th>持仓量</th><th>均价 SGD</th><th>现价</th>
+          <th>市值 SGD</th><th>投入 SGD</th><th>盈亏</th><th>权重</th>
+        </tr></thead>
+        <tbody>\${rows}</tbody>
+      </table>
+    </div>\`;
 }
 
 function renderAllocation() {
@@ -1038,7 +1034,7 @@ function renderTrades() {
         <div style="font-size:11px;color:var(--muted)">${t.date}${t.note?' · '+t.note:''}</div>
       </div>
       <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)">
-        ${fmt(t.units,t.units%1===0?0:4)} 股 @ ${t.currency==='USD'?'$':'S$'}${fmt(t.price,3)}
+        ${fmt(t.units,0)} 股 @ ${t.currency==='USD'?'$':'S$'}${fmt(t.price,3)}
       </div>
       <div style="text-align:right">
         <div class="mono">${t.currency==='USD'?'$':'S$'}${fmt(t.total)}</div>
