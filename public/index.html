@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SG Investment Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #07090f;
+  --bg2:      #0d1117;
+  --surface:  #111827;
+  --surface2: #1a2235;
+  --border:   #1f2d45;
+  --border2:  #2a3d5a;
+  --blue:     #3b82f6;
+  --blue2:    #60a5fa;
+  --green:    #10b981;
+  --green2:   #34d399;
+  --red:      #ef4444;
+  --red2:     #f87171;
+  --gold:     #f59e0b;
+  --gold2:    #fbbf24;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --dim:      #334155;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Sora',sans-serif;font-size:14px;line-height:1.6;
+  min-height:100vh;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 100% 50% at 0% 0%,   rgba(59,130,246,0.06) 0%,transparent 55%),
+    radial-gradient(ellipse 80%  60% at 100% 100%,rgba(16,185,129,0.05) 0%,transparent 55%);
+}
+
+/* ── Layout ── */
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+/* ── Nav ── */
+nav{
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:60px;position:sticky;top:0;z-index:50;
+  background:rgba(7,9,15,0.85);backdrop-filter:blur(12px);
+}
+.nav-logo{
+  font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;
+  color:var(--text);letter-spacing:0.05em;
+  display:flex;align-items:center;gap:10px;
+}
+.nav-logo-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--blue);
+  box-shadow:0 0 8px var(--blue);animation:pulse 3s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.nav-right{display:flex;align-items:center;gap:10px}
+.sync-pill{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  padding:5px 12px;border-radius:20px;border:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;transition:all .3s;
+}
+.sync-pill.ok    {color:var(--green2);border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.06)}
+.sync-pill.busy  {color:var(--gold2); border-color:rgba(251,191,36,.25); background:rgba(251,191,36,.06)}
+.sync-pill.err   {color:var(--red2);  border-color:rgba(248,113,113,.25);background:rgba(248,113,113,.06)}
+.sync-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
+
+/* ── Tabs ── */
+.tabs-bar{
+  display:flex;gap:2px;padding:20px 0 0;
+  border-bottom:1px solid var(--border);margin-bottom:32px;
+}
+.tab-btn{
+  font-family:'Sora',sans-serif;font-size:13px;font-weight:500;
+  padding:10px 20px;background:none;border:none;color:var(--muted);
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all .15s;letter-spacing:.01em;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--blue2);border-bottom-color:var(--blue2)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* ── Cards ── */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px;position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--border2),transparent);
+}
+.card-sm{padding:18px 20px}
+
+/* ── Summary grid ── */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+@media(max-width:900px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.summary-grid{grid-template-columns:1fr}}
+
+.metric-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;
+}
+.metric-val{
+  font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:500;
+  color:var(--text);letter-spacing:-.5px;line-height:1.1;
+}
+.metric-val.up{color:var(--green2)}
+.metric-val.dn{color:var(--red2)}
+.metric-val.gold{color:var(--gold2)}
+.metric-sub{font-size:12px;color:var(--muted);margin-top:5px}
+
+/* ── Progress bar ── */
+.progress-wrap{margin:28px 0}
+.progress-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.progress-title{font-size:13px;font-weight:500;color:var(--text)}
+.progress-pct{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--blue2)}
+.progress-track{height:6px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.progress-fill{
+  height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--blue),var(--green));
+  transition:width .8s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Holdings table ── */
+.holdings-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:28px}
+.holdings-head{
+  display:grid;
+  grid-template-columns:180px 80px 100px 100px 110px 110px 110px 80px;
+  padding:11px 20px;background:var(--surface2);border-bottom:1px solid var(--border);
+}
+.holdings-row{
+  display:grid;
+  grid-template-columns:180px 80px 100px 100px 110px 110px 110px 80px;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  align-items:center;transition:background .1s;
+}
+.holdings-row:last-child{border-bottom:none}
+.holdings-row:hover{background:rgba(255,255,255,.015)}
+@media(max-width:1000px){
+  .holdings-head{display:none}
+  .holdings-row{grid-template-columns:1fr 1fr;gap:10px}
+}
+.col-head{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.ticker-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'JetBrains Mono',monospace;font-weight:500;font-size:14px;color:var(--blue2);
+}
+.ticker-name{font-size:11px;color:var(--muted);margin-top:2px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:13px}
+.up{color:var(--green2)}.dn{color:var(--red2)}
+
+/* ── Weight bars ── */
+.weight-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.weight-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);width:48px}
+.weight-track{flex:1;height:6px;background:var(--surface2);border-radius:99px;overflow:hidden;position:relative}
+.weight-actual{height:100%;border-radius:99px;transition:width .6s ease}
+.weight-target-line{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.2);border-radius:1px}
+.weight-pcts{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);width:90px;text-align:right}
+
+/* ── Trade log ── */
+.trade-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;
+  transition:background .1s;
+}
+.trade-item:last-child{border-bottom:none}
+.trade-item:hover{background:rgba(255,255,255,.015)}
+.trade-badge{
+  font-size:10px;font-weight:600;letter-spacing:.08em;
+  padding:2px 7px;border-radius:4px;text-transform:uppercase;
+}
+.trade-badge.buy {background:rgba(16,185,129,.12);color:var(--green2)}
+.trade-badge.sell{background:rgba(239,68,68,.12);color:var(--red2)}
+
+/* ── DCA Plan ── */
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:700px){.plan-grid{grid-template-columns:1fr}}
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px}
+.plan-ticker{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:500;color:var(--blue2);margin-bottom:4px}
+.plan-name{font-size:11px;color:var(--muted);margin-bottom:12px}
+.plan-amount{font-family:'JetBrains Mono',monospace;font-size:22px;color:var(--text)}
+.plan-pct{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* ── Monthly timeline ── */
+.months-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:28px}
+@media(max-width:800px){.months-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:450px){.months-grid{grid-template-columns:repeat(2,1fr)}}
+.month-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:12px;text-align:center;cursor:default;
+  transition:border-color .2s;
+}
+.month-card.done{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.04)}
+.month-card.current{border-color:var(--blue);background:rgba(59,130,246,.06)}
+.month-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:6px}
+.month-amount{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text)}
+.month-status{font-size:10px;margin-top:4px}
+.month-status.done{color:var(--green2)}
+.month-status.current{color:var(--blue2)}
+.month-status.pending{color:var(--muted)}
+
+/* ── Dividend ── */
+.div-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;
+}
+.div-item:last-child{border-bottom:none}
+
+/* ── Buttons ── */
+.btn{
+  font-family:'Sora',sans-serif;font-size:13px;font-weight:500;
+  padding:8px 18px;border-radius:8px;border:none;cursor:pointer;
+  transition:all .15s;
+}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-danger{background:transparent;color:var(--red2);border:1px solid rgba(239,68,68,.2);padding:4px 10px;font-size:12px}
+.btn-danger:hover{background:rgba(239,68,68,.08)}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* ── Section header ── */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sec-title{font-size:16px;font-weight:600;color:var(--text)}
+
+/* ── Modal ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);z-index:100;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:14px;padding:32px;width:500px;max-width:95vw;
+  max-height:92vh;overflow-y:auto;
+  transform:translateY(10px);transition:transform .2s;
+}
+.overlay.open .modal{transform:translateY(0)}
+.modal-title{font-size:18px;font-weight:600;margin-bottom:24px}
+.fg{margin-bottom:16px}
+.fl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;display:block}
+.fi{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;
+  transition:border-color .15s;
+}
+.fi:focus{border-color:var(--blue)}
+.fs{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;cursor:pointer}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fa{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:var(--surface2);border:1px solid var(--border2);
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  padding:11px 22px;border-radius:99px;z-index:200;
+  opacity:0;transition:all .3s;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.ok{border-color:rgba(52,211,153,.3);color:var(--green2)}
+.toast.fail{border-color:rgba(248,113,113,.3);color:var(--red2)}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.35}
+.empty-title{font-size:16px;font-weight:500;color:var(--dim);margin-bottom:6px}
+
+/* ── Note box ── */
+.note{font-size:12px;color:var(--muted);padding:12px 16px;background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.15);border-radius:8px;line-height:1.7}
+.note a{color:var(--blue2)}
+
+/* ── Settings ── */
+.settings-group{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    SG·INVEST
+  </div>
+  <div class="nav-right">
+    <div class="sync-pill ok" id="sync-pill">
+      <div class="sync-dot"></div>
+      <span id="sync-text">已同步</span>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('add-trade')">+ 买入</button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">总览</button>
+    <button class="tab-btn" onclick="switchTab('trades',this)">交易记录</button>
+    <button class="tab-btn" onclick="switchTab('dca',this)">月度计划</button>
+    <button class="tab-btn" onclick="switchTab('dividends',this)">股息</button>
+    <button class="tab-btn" onclick="switchTab('settings',this)">设置</button>
+  </div>
+
+  <!-- ══ 总览 ══ -->
+  <div id="tab-overview" class="tab-pane active">
+    <div class="summary-grid" id="summary-cards"></div>
+
+    <!-- Goal progress -->
+    <div class="card" style="margin-bottom:28px">
+      <div class="progress-wrap" style="margin:0">
+        <div class="progress-header">
+          <div class="progress-title">目标进度 · S$100,000</div>
+          <div class="progress-pct" id="goal-pct">0%</div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="goal-bar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green2)" id="goal-invested">已投入 S$0</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)" id="goal-remain">剩余 S$100,000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings -->
+    <div class="sec-header">
+      <div class="sec-title">持仓明细</div>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('update-prices')">更新价格 ✎</button>
+    </div>
+    <div id="holdings-table"></div>
+
+    <!-- Allocation -->
+    <div class="card">
+      <div class="sec-title" style="margin-bottom:18px">权重分析</div>
+      <div id="allocation-chart"></div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+        <span style="color:rgba(255,255,255,.2)">▏</span> 虚线 = 目标权重
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 交易记录 ══ -->
+  <div id="tab-trades" class="tab-pane">
+    <div class="sec-header">
+      <div class="sec-title">交易记录</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('add-trade')">+ 添加</button>
+    </div>
+    <div class="holdings-wrap" id="trades-list"></div>
+  </div>
+
+  <!-- ══ 月度计划 ══ -->
+  <div id="tab-dca" class="tab-pane">
+    <div class="sec-header">
+      <div class="sec-title">月度定投计划</div>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('edit-plan')">编辑计划</button>
+    </div>
+
+    <div class="plan-grid" id="plan-cards"></div>
+
+    <div class="sec-header" style="margin-top:8px">
+      <div class="sec-title" style="font-size:14px">6个月进度</div>
+    </div>
+    <div class="months-grid" id="months-grid"></div>
+
+    <div class="note">
+      📌 执行纪律：固定同一天买 · 不因涨跌改变金额 · 不看新闻 · 6个月完成前不做结构调整<br>
+      📉 大跌 &gt;10% 时：当月额外加 S$5,000 到 VWRA（从后面月份额度提前）
+    </div>
+  </div>
+
+  <!-- ══ 股息 ══ -->
+  <div id="tab-dividends" class="tab-pane">
+    <div class="sec-header">
+      <div class="sec-title">股息记录</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('add-dividend')">+ 记录</button>
+    </div>
+    <div class="holdings-wrap" id="dividends-list"></div>
+    <div class="note" style="margin-top:16px">
+      💡 参考：ES3 约 3–4% 年息 · CLR (S-REIT) 不定期派息 · VWRA 约 1.5–2% 年息
+    </div>
+  </div>
+
+  <!-- ══ 设置 ══ -->
+  <div id="tab-settings" class="tab-pane">
+    <div class="sec-title" style="margin-bottom:20px">设置</div>
+
+    <div class="settings-group">
+      <div class="settings-row">
+        <div>
+          <div style="font-weight:500;margin-bottom:2px">USD / SGD 汇率</div>
+          <div style="font-size:12px;color:var(--muted)">VWRA 价格换算用</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="fi" id="rate-input" type="number" step="0.0001" style="width:100px;text-align:right">
+          <button class="btn btn-ghost btn-sm" onclick="saveRate()">保存</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div style="font-weight:500;margin-bottom:2px">投资目标</div>
+          <div style="font-size:12px;color:var(--muted)">总目标金额 SGD</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="fi" id="goal-input" type="number" step="1000" style="width:120px;text-align:right">
+          <button class="btn btn-ghost btn-sm" onclick="saveGoal()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div style="font-weight:500;margin-bottom:14px">持仓股票管理</div>
+      <div id="stocks-settings"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="openModal('add-stock')">+ 添加股票</button>
+    </div>
+
+    <div class="note" style="margin-top:16px">
+      查询最新价格：
+      <a href="https://finance.yahoo.com/quote/ES3.SI" target="_blank">ES3</a> ·
+      <a href="https://finance.yahoo.com/quote/CLR.SI" target="_blank">CLR</a> ·
+      <a href="https://finance.yahoo.com/quote/VWRA.L" target="_blank">VWRA</a> ·
+      <a href="https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To=SGD" target="_blank">USD/SGD 汇率</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modals ─────────────────────────────────────────────────────────── -->
+
+<!-- Add Trade -->
+<div class="overlay" id="overlay-add-trade">
+  <div class="modal">
+    <div class="modal-title">添加交易记录</div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">股票</label>
+        <select class="fs" id="tr-ticker" onchange="onTradeTickerChange()"></select>
+      </div>
+      <div class="fg">
+        <label class="fl">操作</label>
+        <select class="fs" id="tr-action">
+          <option value="buy">买入</option>
+          <option value="sell">卖出</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">日期</label>
+        <input class="fi" type="date" id="tr-date">
+      </div>
+      <div class="fg">
+        <label class="fl">货币</label>
+        <select class="fs" id="tr-currency">
+          <option value="SGD">SGD</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">单价</label>
+        <input class="fi" type="number" id="tr-price" placeholder="0.00" step="0.001">
+      </div>
+      <div class="fg">
+        <label class="fl">单位数</label>
+        <input class="fi" type="number" id="tr-units" placeholder="0">
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">总金额（自动）</label>
+        <input class="fi" type="number" id="tr-total" placeholder="0.00" readonly style="opacity:.6">
+      </div>
+      <div class="fg">
+        <label class="fl">手续费</label>
+        <input class="fi" type="number" id="tr-fee" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">备注</label>
+      <input class="fi" type="text" id="tr-note" placeholder="可选">
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost" onclick="closeModal('add-trade')">取消</button>
+      <button class="btn btn-primary" onclick="saveTrade()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Prices -->
+<div class="overlay" id="overlay-update-prices">
+  <div class="modal">
+    <div class="modal-title">更新股票价格</div>
+    <div id="price-fields"></div>
+    <div class="fa">
+      <button class="btn btn-ghost" onclick="closeModal('update-prices')">取消</button>
+      <button class="btn btn-primary" onclick="savePrices()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Dividend -->
+<div class="overlay" id="overlay-add-dividend">
+  <div class="modal">
+    <div class="modal-title">记录股息</div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">股票</label>
+        <select class="fs" id="div-ticker"></select>
+      </div>
+      <div class="fg">
+        <label class="fl">到账日期</label>
+        <input class="fi" type="date" id="div-date">
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">每单位股息 (SGD)</label>
+        <input class="fi" type="number" id="div-dpu" placeholder="0.0000" step="0.0001">
+      </div>
+      <div class="fg">
+        <label class="fl">持有单位</label>
+        <input class="fi" type="number" id="div-units" placeholder="0">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">收到金额 (SGD)</label>
+      <input class="fi" type="number" id="div-amount" placeholder="自动计算" readonly style="opacity:.6">
+    </div>
+    <div class="fg">
+      <label class="fl">股息类型</label>
+      <select class="fs" id="div-type">
+        <option>普通股息</option>
+        <option>特别股息</option>
+        <option>资本回报</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl">备注</label>
+      <input class="fi" type="text" id="div-note" placeholder="例：Q1 2025">
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost" onclick="closeModal('add-dividend')">取消</button>
+      <button class="btn btn-primary" onclick="saveDividend()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Plan -->
+<div class="overlay" id="overlay-edit-plan">
+  <div class="modal">
+    <div class="modal-title">编辑月度定投计划</div>
+    <div id="plan-edit-fields"></div>
+    <div class="fa">
+      <button class="btn btn-ghost" onclick="closeModal('edit-plan')">取消</button>
+      <button class="btn btn-primary" onclick="savePlan()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Stock -->
+<div class="overlay" id="overlay-add-stock">
+  <div class="modal">
+    <div class="modal-title">添加股票</div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">代码</label>
+        <input class="fi" type="text" id="sk-ticker" placeholder="e.g. CSPX">
+      </div>
+      <div class="fg">
+        <label class="fl">货币</label>
+        <select class="fs" id="sk-currency">
+          <option value="SGD">SGD</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">名称</label>
+      <input class="fi" type="text" id="sk-name" placeholder="股票全名">
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">目标权重 %</label>
+        <input class="fi" type="number" id="sk-target" placeholder="0" min="0" max="100">
+      </div>
+      <div class="fg">
+        <label class="fl">当前价格</label>
+        <input class="fi" type="number" id="sk-price" placeholder="0.00" step="0.001">
+      </div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost" onclick="closeModal('add-stock')">取消</button>
+      <button class="btn btn-primary" onclick="saveNewStock()">添加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── API ────────────────────────────────────────────────────────────────────────
+const API = '/api/data';
+let S = null; // state
+
+async function apiLoad() {
+  badge('busy','加载中...');
+  try {
+    const r = await fetch(API);
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    S = await r.json();
+    badge('ok','已同步 ☁');
+    render();
+  } catch(e) {
+    badge('err','连接失败');
+    toast('无法连接服务器','fail');
+  }
+}
+
+async function apiSave() {
+  badge('busy','保存中...');
+  try {
+    const r = await fetch(API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(S),
+    });
+    if (!r.ok) throw new Error();
+    badge('ok','已同步 ☁');
+    return true;
+  } catch(e) {
+    badge('err','保存失败');
+    toast('保存失败，请重试','fail');
+    return false;
+  }
+}
+
+function badge(type, text) {
+  const el = document.getElementById('sync-pill');
+  el.className = 'sync-pill '+type;
+  document.getElementById('sync-text').textContent = text;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function toSGD(amount, currency) { return currency==='USD' ? amount * S.usdSgdRate : amount; }
+function fmt(n, d=2) { return Number(n||0).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmtS(n) { return 'S$'+fmt(n); }
+function today() { return new Date().toISOString().split('T')[0]; }
+
+// Compute holdings from trades
+function computeHoldings() {
+  const map = {};
+  S.stocks.forEach(sk => { map[sk.ticker] = { ...sk, shares:0, totalCostSGD:0 }; });
+  S.trades.filter(t=>t.action==='buy').forEach(t => {
+    if (!map[t.ticker]) map[t.ticker] = { ticker:t.ticker, name:t.ticker, currency:t.currency||'SGD', currentPrice:0, targetPct:0, shares:0, totalCostSGD:0 };
+    map[t.ticker].shares += t.units;
+    map[t.ticker].totalCostSGD += toSGD(t.total, t.currency||'SGD');
+  });
+  S.trades.filter(t=>t.action==='sell').forEach(t => {
+    if (map[t.ticker]) {
+      map[t.ticker].shares -= t.units;
+      map[t.ticker].totalCostSGD -= toSGD(t.total, t.currency||'SGD');
+    }
+  });
+  return Object.values(map).map(h => ({
+    ...h,
+    avgCostSGD: h.shares ? h.totalCostSGD / h.shares : 0,
+    mktValSGD:  toSGD(h.currentPrice, h.currency) * h.shares,
+  }));
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById('overlay-'+id).classList.add('open');
+  const t = today();
+  if (id==='add-trade') {
+    document.getElementById('tr-date').value = t;
+    document.getElementById('tr-fee').value = '';
+    document.getElementById('tr-note').value = '';
+    document.getElementById('tr-price').value = '';
+    document.getElementById('tr-units').value = '';
+    document.getElementById('tr-total').value = '';
+    populateTickers('tr-ticker');
+  }
+  if (id==='add-dividend') {
+    document.getElementById('div-date').value = t;
+    document.getElementById('div-dpu').value = '';
+    document.getElementById('div-units').value = '';
+    document.getElementById('div-amount').value = '';
+    document.getElementById('div-note').value = '';
+    populateTickers('div-ticker');
+    // auto-fill units for selected ticker
+    document.getElementById('div-ticker').addEventListener('change', autofillDivUnits);
+    autofillDivUnits();
+  }
+  if (id==='update-prices') buildPriceFields();
+  if (id==='edit-plan') buildPlanFields();
+  if (id==='settings') {
+    document.getElementById('rate-input').value = S.usdSgdRate;
+    document.getElementById('goal-input').value = S.goal;
+  }
+}
+function closeModal(id) { document.getElementById('overlay-'+id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('open'); }));
+
+function populateTickers(elId) {
+  const sel = document.getElementById(elId);
+  sel.innerHTML = S.stocks.map(sk=>`<option value="${sk.ticker}">${sk.ticker} — ${sk.name}</option>`).join('');
+}
+
+function onTradeTickerChange() {
+  const ticker = document.getElementById('tr-ticker').value;
+  const sk = S.stocks.find(s=>s.ticker===ticker);
+  if (sk) document.getElementById('tr-currency').value = sk.currency;
+}
+
+// auto-calc total
+['tr-price','tr-units'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target.id===id) calcTradeTotal(); });
+});
+function calcTradeTotal() {
+  const p = parseFloat(document.getElementById('tr-price').value)||0;
+  const u = parseFloat(document.getElementById('tr-units').value)||0;
+  document.getElementById('tr-total').value = (p*u).toFixed(2);
+}
+
+// auto-calc dividend
+['div-dpu','div-units'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target.id===id) calcDivAmount(); });
+});
+function calcDivAmount() {
+  const dpu   = parseFloat(document.getElementById('div-dpu').value)||0;
+  const units = parseFloat(document.getElementById('div-units').value)||0;
+  document.getElementById('div-amount').value = (dpu*units).toFixed(4);
+}
+function autofillDivUnits() {
+  const ticker = document.getElementById('div-ticker').value;
+  const h = computeHoldings().find(h=>h.ticker===ticker);
+  if (h) document.getElementById('div-units').value = h.shares;
+  calcDivAmount();
+}
+
+// ── Save actions ──────────────────────────────────────────────────────────────
+async function saveTrade() {
+  const ticker   = document.getElementById('tr-ticker').value;
+  const action   = document.getElementById('tr-action').value;
+  const date     = document.getElementById('tr-date').value;
+  const currency = document.getElementById('tr-currency').value;
+  const price    = parseFloat(document.getElementById('tr-price').value);
+  const units    = parseFloat(document.getElementById('tr-units').value);
+  const fee      = parseFloat(document.getElementById('tr-fee').value)||0;
+  const note     = document.getElementById('tr-note').value;
+  if (!date||!price||!units) { toast('请填写必填项','fail'); return; }
+
+  const sk   = S.stocks.find(s=>s.ticker===ticker);
+  const name = sk?.name || ticker;
+  const total = price * units;
+
+  S.trades.push({ id:Date.now(), date, ticker, name, action, currency, price, units, total, fee, note });
+  S.trades.sort((a,b)=>b.date.localeCompare(a.date));
+  closeModal('add-trade');
+  const ok = await apiSave();
+  if (ok) { render(); toast('交易已保存 ✓','ok'); }
+}
+
+async function savePrices() {
+  S.stocks.forEach(sk => {
+    const el = document.getElementById('px-'+sk.ticker);
+    if (el && el.value) sk.currentPrice = parseFloat(el.value);
+  });
+  closeModal('update-prices');
+  const ok = await apiSave();
+  if (ok) { render(); toast('价格已更新 ✓','ok'); }
+}
+
+async function saveDividend() {
+  const ticker = document.getElementById('div-ticker').value;
+  const date   = document.getElementById('div-date').value;
+  const dpu    = parseFloat(document.getElementById('div-dpu').value)||0;
+  const units  = parseFloat(document.getElementById('div-units').value)||0;
+  const amount = dpu * units;
+  const type   = document.getElementById('div-type').value;
+  const note   = document.getElementById('div-note').value;
+  if (!date||!amount) { toast('请填写必填项','fail'); return; }
+
+  S.dividends.push({ id:Date.now(), date, ticker, dpu, units, amount, type, note });
+  S.dividends.sort((a,b)=>b.date.localeCompare(a.date));
+  closeModal('add-dividend');
+  const ok = await apiSave();
+  if (ok) { render(); toast('股息记录已保存 ✓','ok'); }
+}
+
+async function deleteTrade(id) {
+  if (!confirm('确认删除此交易记录？')) return;
+  S.trades = S.trades.filter(t=>t.id!==id);
+  const ok = await apiSave();
+  if (ok) { render(); toast('已删除','ok'); }
+}
+
+async function deleteDividend(id) {
+  if (!confirm('确认删除？')) return;
+  S.dividends = S.dividends.filter(d=>d.id!==id);
+  const ok = await apiSave();
+  if (ok) { render(); toast('已删除','ok'); }
+}
+
+async function saveRate() {
+  const v = parseFloat(document.getElementById('rate-input').value);
+  if (v>0) { S.usdSgdRate = v; const ok = await apiSave(); if(ok){render();toast('汇率已更新','ok');} }
+}
+async function saveGoal() {
+  const v = parseFloat(document.getElementById('goal-input').value);
+  if (v>0) { S.goal = v; const ok = await apiSave(); if(ok){render();toast('目标已更新','ok');} }
+}
+
+function buildPriceFields() {
+  document.getElementById('price-fields').innerHTML = S.stocks.map(sk=>`
+    <div class="fg">
+      <label class="fl">${sk.ticker} — ${sk.name} (${sk.currency})</label>
+      <input class="fi" type="number" id="px-${sk.ticker}" value="${sk.currentPrice}" step="0.001">
+    </div>`).join('');
+}
+
+function buildPlanFields() {
+  document.getElementById('plan-edit-fields').innerHTML = S.monthlyPlan.map((p,i)=>`
+    <div class="fg">
+      <label class="fl">${p.ticker} 每月 SGD</label>
+      <input class="fi" type="number" id="plan-${i}" value="${p.monthlySGD}" step="100">
+    </div>`).join('');
+}
+
+async function savePlan() {
+  S.monthlyPlan.forEach((p,i)=>{
+    const el = document.getElementById('plan-'+i);
+    if (el) p.monthlySGD = parseFloat(el.value)||0;
+  });
+  closeModal('edit-plan');
+  const ok = await apiSave();
+  if (ok) { render(); toast('计划已更新 ✓','ok'); }
+}
+
+async function saveNewStock() {
+  const ticker   = document.getElementById('sk-ticker').value.trim().toUpperCase();
+  const name     = document.getElementById('sk-name').value.trim();
+  const currency = document.getElementById('sk-currency').value;
+  const targetPct= parseFloat(document.getElementById('sk-target').value)||0;
+  const price    = parseFloat(document.getElementById('sk-price').value)||0;
+  if (!ticker||!name) { toast('请填写代码和名称','fail'); return; }
+  if (S.stocks.find(s=>s.ticker===ticker)) { toast('该股票已存在','fail'); return; }
+  S.stocks.push({ ticker, name, currency, targetPct, currentPrice:price });
+  S.monthlyPlan.push({ ticker, monthlySGD:0 });
+  closeModal('add-stock');
+  const ok = await apiSave();
+  if (ok) { render(); toast('股票已添加 ✓','ok'); }
+}
+
+async function deleteStock(ticker) {
+  if (!confirm(`确认删除 ${ticker}？`)) return;
+  S.stocks = S.stocks.filter(s=>s.ticker!==ticker);
+  S.monthlyPlan = S.monthlyPlan.filter(p=>p.ticker!==ticker);
+  const ok = await apiSave();
+  if (ok) { render(); toast('已删除','ok'); }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast '+type+' show';
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.className='toast '+type; }, 3000);
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name==='settings') {
+    document.getElementById('rate-input').value = S.usdSgdRate;
+    document.getElementById('goal-input').value = S.goal;
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4'];
+
+function render() {
+  if (!S) return;
+  renderSummary();
+  renderHoldings();
+  renderAllocation();
+  renderTrades();
+  renderDCA();
+  renderDividends();
+  renderStocksSettings();
+}
+
+function renderSummary() {
+  const holdings = computeHoldings();
+  const invested = holdings.reduce((s,h)=>s+h.totalCostSGD,0);
+  const mktVal   = holdings.reduce((s,h)=>s+h.mktValSGD,0);
+  const pnl      = mktVal - invested;
+  const pnlPct   = invested ? (pnl/invested)*100 : 0;
+  const divTotal = S.dividends.reduce((s,d)=>s+d.amount,0);
+  const goalPct  = Math.min((invested/S.goal)*100, 100);
+
+  document.getElementById('summary-cards').innerHTML = `
+    <div class="card card-sm">
+      <div class="metric-label">总投入</div>
+      <div class="metric-val">${fmtS(invested)}</div>
+      <div class="metric-sub">${S.trades.filter(t=>t.action==='buy').length} 笔买入</div>
+    </div>
+    <div class="card card-sm">
+      <div class="metric-label">当前市值</div>
+      <div class="metric-val">${fmtS(mktVal)}</div>
+      <div class="metric-sub">USD/SGD ${S.usdSgdRate}</div>
+    </div>
+    <div class="card card-sm">
+      <div class="metric-label">总盈亏</div>
+      <div class="metric-val ${pnl>=0?'up':'dn'}">${pnl>=0?'+':''}${fmtS(pnl)}</div>
+      <div class="metric-sub" style="color:${pnl>=0?'var(--green2)':'var(--red2)'}">${pnl>=0?'+':''}${fmt(pnlPct)}%</div>
+    </div>
+    <div class="card card-sm">
+      <div class="metric-label">累计股息</div>
+      <div class="metric-val gold">${fmtS(divTotal)}</div>
+      <div class="metric-sub">${S.dividends.length} 笔记录</div>
+    </div>`;
+
+  document.getElementById('goal-pct').textContent = fmt(goalPct)+'%';
+  document.getElementById('goal-bar').style.width = goalPct+'%';
+  document.getElementById('goal-invested').textContent = '已投入 '+fmtS(invested);
+  document.getElementById('goal-remain').textContent = '剩余 '+fmtS(Math.max(0,S.goal-invested));
+}
+
+function renderHoldings() {
+  const holdings = computeHoldings();
+  const totalMkt = holdings.reduce((s,h)=>s+h.mktValSGD,0);
+
+  if (!holdings.length) {
+    document.getElementById('holdings-table').innerHTML = '<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">暂无持仓</div></div>';
+    return;
+  }
+
+  const head = `<div class="holdings-wrap">
+    <div class="holdings-head">
+      <div class="col-head">股票</div>
+      <div class="col-head">持仓量</div>
+      <div class="col-head">均价 SGD</div>
+      <div class="col-head">现价</div>
+      <div class="col-head">市值 SGD</div>
+      <div class="col-head">投入 SGD</div>
+      <div class="col-head">盈亏</div>
+      <div class="col-head">权重</div>
+    </div>`;
+
+  const rows = holdings.map(h => {
+    const pnl    = h.mktValSGD - h.totalCostSGD;
+    const pnlPct = h.totalCostSGD ? (pnl/h.totalCostSGD)*100 : 0;
+    const wt     = totalMkt ? (h.mktValSGD/totalMkt)*100 : 0;
+    const sym    = h.currency==='USD' ? '$' : 'S$';
+    const pos    = pnl >= 0;
+    return `<div class="holdings-row">
+      <div>
+        <div class="ticker-badge">${h.ticker}</div>
+        <div class="ticker-name">${h.name}</div>
+      </div>
+      <div class="mono">${fmt(h.shares,4)}</div>
+      <div class="mono">${fmtS(h.avgCostSGD)}</div>
+      <div>
+        <div class="mono" style="cursor:pointer" onclick="openModal('update-prices')" title="点击更新">${sym}${fmt(h.currentPrice,3)} ✎</div>
+        <div style="font-size:10px;color:var(--muted)">${h.currency}</div>
+      </div>
+      <div class="mono">${fmtS(h.mktValSGD)}</div>
+      <div class="mono">${fmtS(h.totalCostSGD)}</div>
+      <div>
+        <div class="mono ${pos?'up':'dn'}">${pos?'+':''}${fmtS(pnl)}</div>
+        <div style="font-size:11px;color:${pos?'var(--green2)':'var(--red2)'}">${pos?'+':''}${fmt(pnlPct)}%</div>
+      </div>
+      <div class="mono" style="color:var(--muted)">${fmt(wt)}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('holdings-table').innerHTML = head + rows + '</div>';
+}
+
+function renderAllocation() {
+  const holdings = computeHoldings();
+  const totalMkt = holdings.reduce((s,h)=>s+h.mktValSGD,0);
+
+  const rows = S.stocks.map((sk,i) => {
+    const h       = holdings.find(h=>h.ticker===sk.ticker);
+    const actual  = totalMkt && h ? (h.mktValSGD/totalMkt)*100 : 0;
+    const target  = sk.targetPct;
+    const color   = COLORS[i % COLORS.length];
+    const diff    = actual - target;
+    return `<div class="weight-row">
+      <div class="weight-label" style="color:${color}">${sk.ticker}</div>
+      <div class="weight-track">
+        <div class="weight-actual" style="width:${Math.min(actual,100)}%;background:${color};opacity:.85"></div>
+        <div class="weight-target-line" style="left:${Math.min(target,100)}%"></div>
+      </div>
+      <div class="weight-pcts">
+        <span style="color:${color}">${fmt(actual)}%</span>
+        <span style="color:var(--dim)"> / ${target}%</span>
+        <span style="color:${diff>5?'var(--gold2)':diff<-5?'var(--red2)':'var(--muted)';font-size:10px"> ${diff>=0?'+':''}${fmt(diff)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('allocation-chart').innerHTML = rows || '<div style="color:var(--muted);font-size:13px">暂无数据</div>';
+}
+
+function renderTrades() {
+  const el = document.getElementById('trades-list');
+  const sorted = [...S.trades].sort((a,b)=>b.date.localeCompare(a.date));
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">暂无交易记录</div></div>';
+    return;
+  }
+  el.innerHTML = sorted.map(t=>`
+    <div class="trade-item">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span class="ticker-badge">${t.ticker}</span>
+          <span class="trade-badge ${t.action}">${t.action==='buy'?'买入':'卖出'}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">${t.date}${t.note?' · '+t.note:''}</div>
+      </div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)">
+        ${fmt(t.units,t.units%1===0?0:4)} 股 @ ${t.currency==='USD'?'$':'S$'}${fmt(t.price,3)}
+      </div>
+      <div style="text-align:right">
+        <div class="mono">${t.currency==='USD'?'$':'S$'}${fmt(t.total)}</div>
+        ${t.currency==='USD'?`<div style="font-size:11px;color:var(--muted)">≈ S$${fmt(t.total*S.usdSgdRate)}</div>`:''}
+        ${t.fee?`<div style="font-size:11px;color:var(--muted)">手续费 S$${fmt(t.fee)}</div>`:''}
+      </div>
+      <button class="btn btn-danger" onclick="deleteTrade(${t.id})">✕</button>
+    </div>`).join('');
+}
+
+function renderDCA() {
+  // Plan cards
+  const total = S.monthlyPlan.reduce((s,p)=>s+p.monthlySGD,0);
+  document.getElementById('plan-cards').innerHTML = S.monthlyPlan.map((p,i)=>{
+    const sk = S.stocks.find(s=>s.ticker===p.ticker);
+    const color = COLORS[i%COLORS.length];
+    return `<div class="plan-card" style="border-color:${color}22">
+      <div class="plan-ticker" style="color:${color}">${p.ticker}</div>
+      <div class="plan-name">${sk?.name||p.ticker}</div>
+      <div class="plan-amount">S$${fmt(p.monthlySGD,0)}</div>
+      <div class="plan-pct">${total?fmt(p.monthlySGD/total*100):'0'}% · 目标权重 ${sk?.targetPct||0}%</div>
+    </div>`;
+  }).join('') + `<div class="plan-card" style="border-style:dashed;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--text)">S$${fmt(total,0)}</div>
+    <div style="font-size:12px;color:var(--muted)">每月合计</div>
+  </div>`;
+
+  // Monthly timeline — start from 2026-02
+  const months = [];
+  const start = new Date('2026-02-01');
+  for (let i=0;i<6;i++) {
+    const d = new Date(start);
+    d.setMonth(d.getMonth()+i);
+    months.push({
+      label: d.toLocaleDateString('zh-CN',{year:'numeric',month:'short'}),
+      ym: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+    });
+  }
+  const now = new Date();
+  const nowYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  document.getElementById('months-grid').innerHTML = months.map(m=>{
+    const invested = S.trades
+      .filter(t=>t.action==='buy' && t.date.startsWith(m.ym))
+      .reduce((s,t)=>s+toSGD(t.total,t.currency),0);
+    const done    = m.ym < nowYM && invested > 0;
+    const current = m.ym === nowYM;
+    const cls     = done?'done':current?'current':'';
+    return `<div class="month-card ${cls}">
+      <div class="month-label">${m.label}</div>
+      <div class="month-amount">${invested>0?'S$'+fmt(invested,0):'—'}</div>
+      <div class="month-status ${cls}">${done?'✓ 已完成':current?'▶ 进行中':'待执行'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDividends() {
+  const el = document.getElementById('dividends-list');
+  const total = S.dividends.reduce((s,d)=>s+d.amount,0);
+  if (!S.dividends.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">💰</div><div class="empty-title">暂无股息记录</div><div>收到股息后点「记录」添加</div></div>';
+    return;
+  }
+  el.innerHTML = `<div style="padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.1em">累计股息</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--gold2)">S$${fmt(total,4)}</span>
+  </div>` +
+  [...S.dividends].sort((a,b)=>b.date.localeCompare(a.date)).map(d=>`
+    <div class="div-item">
+      <div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="ticker-badge">${d.ticker}</span>
+          <span style="font-size:11px;color:var(--muted)">${d.type}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${d.date}${d.note?' · '+d.note:''}</div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)">
+        ${d.dpu?`${fmt(d.dpu,4)} × ${fmt(d.units,0)} 股`:''}
+      </div>
+      <div style="text-align:right">
+        <div class="mono" style="color:var(--gold2)">S$${fmt(d.amount,4)}</div>
+      </div>
+      <button class="btn btn-danger" onclick="deleteDividend(${d.id})">✕</button>
+    </div>`).join('');
+}
+
+function renderStocksSettings() {
+  document.getElementById('stocks-settings').innerHTML = S.stocks.map(sk=>`
+    <div class="settings-row">
+      <div>
+        <div style="font-weight:500">${sk.ticker} <span style="color:var(--muted);font-weight:400;font-size:12px">· ${sk.name}</span></div>
+        <div style="font-size:12px;color:var(--muted)">${sk.currency} · 目标 ${sk.targetPct}% · 现价 ${sk.currency==='USD'?'$':'S$'}${fmt(sk.currentPrice,3)}</div>
+      </div>
+      <button class="btn btn-danger" onclick="deleteStock('${sk.ticker}')">删除</button>
+    </div>`).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+apiLoad();
+</script>
+</body>
+</html>
