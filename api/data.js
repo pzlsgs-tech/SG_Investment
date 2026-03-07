@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { appendTradeToSheet } from './sheets.js';
 
 const redis = Redis.fromEnv();
 const KEY = 'sg_investment_data';
@@ -21,6 +22,18 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const body = req.body;
+      if (!body || typeof body !== 'object') {
+        return res.status(400).json({ error: 'Invalid data' });
+      }
+
+      // If a new trade is flagged for Sheets sync
+      if (body._syncTrade) {
+        const trade = body._syncTrade;
+        delete body._syncTrade;
+        // Fire and forget - don't block save if Sheets fails
+        appendTradeToSheet(trade).catch(e => console.error('Sheets async error:', e));
+      }
+
       body.savedAt = new Date().toISOString();
       await redis.set(KEY, body);
       return res.status(200).json({ ok: true, savedAt: body.savedAt });
