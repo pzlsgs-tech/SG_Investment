@@ -45,15 +45,20 @@ async function appendTradeToSheet(trade) {
       '',
       trade.note || '',
     ];
-    const sheetName = encodeURIComponent('交易记录');
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheetName}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+
+    // Use A1 notation with ASCII-safe range - append to column B onwards
+    // Range must be in format: 'SheetName'!A1:Z1 or just A:Z
+    const encodedSheet = encodeURIComponent('\u4ea4\u6613\u8bb0\u5f55'); // 交易记录
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodedSheet}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: [row] }),
+      body: JSON.stringify({ values: [['', ...row]] }), // col A empty, data starts at B
     });
     const result = await res.json();
     if (result.error) throw new Error(result.error.message);
+    console.log('Sheets sync OK');
     return true;
   } catch (e) {
     console.error('Sheets sync error:', e.message);
