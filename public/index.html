@@ -761,11 +761,27 @@ async function saveTrade() {
   const name = sk?.name || ticker;
   const total = price * units;
 
-  S.trades.push({ id:Date.now(), date, ticker, name, action, currency, price, units, total, fee, note });
+  const newTrade = { id:Date.now(), date, ticker, name, action, currency, price, units, total, fee, note };
+  S.trades.push(newTrade);
   S.trades.sort((a,b)=>b.date.localeCompare(a.date));
   closeModal('add-trade');
-  const ok = await apiSave();
-  if (ok) { render(); toast('交易已保存 ✓','ok'); }
+  // Mark trade for Google Sheets sync
+  const savePayload = { ...S, _syncTrade: newTrade };
+  badge('busy','保存中...');
+  try {
+    const r = await fetch('/api/data', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(savePayload),
+    });
+    if (!r.ok) throw new Error();
+    badge('ok','已同步 ☁');
+    render();
+    toast('交易已保存并同步到 Sheets ✓','ok');
+  } catch(e) {
+    badge('err','保存失败');
+    toast('保存失败，请重试','fail');
+  }
 }
 
 async function savePrices() {
