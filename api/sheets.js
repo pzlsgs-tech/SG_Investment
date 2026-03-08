@@ -34,36 +34,35 @@ async function appendTradeToSheet(trade) {
   try {
     const token = await getAccessToken();
 
-    // Read column B rows 10-200 to find first truly empty cell (no date value)
+    // Read only column B (日期) rows 10-200 - this column should only have real dates
     const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!B10:B200?valueRenderOption=UNFORMATTED_VALUE`;
-    const getRes = await fetch(getUrl, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const getRes = await fetch(getUrl, { headers: { 'Authorization': `Bearer ${token}` } });
     const getData = await getRes.json();
     const bValues = getData.values || [];
 
-    // Find first row where B is empty (no date)
-    let nextRow = 10;
+    // Count rows where B has an actual date string (not formula result)
+    // Dates from App are stored as text "2026-03-07"
+    let lastDataRow = 9; // default: start at row 10 (index 9)
     for (let i = 0; i < bValues.length; i++) {
-      const cellVal = bValues[i] && bValues[i][0];
-      if (cellVal && String(cellVal).match(/^\d{4}-\d{2}-\d{2}$/)) {
-        nextRow = 10 + i + 1; // this row has a date, move to next
+      const v = bValues[i] && bValues[i][0];
+      if (v && typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        lastDataRow = 10 + i;
       }
     }
-
-    console.log('Writing trade to row:', nextRow);
+    const nextRow = lastDataRow + 1;
+    console.log('Last data row:', lastDataRow, '-> writing to row:', nextRow);
 
     const row = [
-      trade.date,        // B - 日期
-      trade.ticker,      // C - 代码
-      trade.name || '',  // D - 股票名称
-      trade.action === 'buy' ? '买入' : '卖出', // E - 操作
-      trade.price,       // F - 单价
-      trade.units,       // G - 单位数
-      trade.total,       // H - 总金额
-      trade.fee || '',   // I - 手续费
-      '',                // J - 现价
-      trade.note || '',  // K - 备注
+      trade.date,
+      trade.ticker,
+      trade.name || '',
+      trade.action === 'buy' ? '买入' : '卖出',
+      trade.price,
+      trade.units,
+      trade.total,
+      trade.fee || '',
+      '',
+      trade.note || '',
     ];
 
     const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!B${nextRow}:K${nextRow}?valueInputOption=USER_ENTERED`;
