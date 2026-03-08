@@ -39,20 +39,27 @@ async function appendTradeToSheet(trade) {
   }
   try {
     const token = await getAccessToken();
-    // Read column B from row 10 to find last row with a date
+
+    // Read column B rows 10-200, get raw unformatted values to inspect what's there
     const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!B10:B200?valueRenderOption=UNFORMATTED_VALUE`;
     const getRes = await fetch(getUrl, { headers: { 'Authorization': `Bearer ${token}` } });
     const getData = await getRes.json();
     const bValues = getData.values || [];
+
+    // Log first 10 values to see what format the dates are in
+    console.log('B column sample (first 10):', JSON.stringify(bValues.slice(0, 10)));
+
+    // Find last non-empty row in B (any truthy value = has data)
     let lastDataRow = 9;
     for (let i = 0; i < bValues.length; i++) {
       const v = bValues[i] && bValues[i][0];
-      if (v && typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      if (v !== undefined && v !== null && v !== '') {
         lastDataRow = 10 + i;
       }
     }
     const nextRow = lastDataRow + 1;
-    console.log('Sheets: writing to row', nextRow);
+    console.log('Sheets: last data row =', lastDataRow, '-> writing to row', nextRow);
+
     const row = [
       trade.date,
       trade.ticker,
@@ -65,6 +72,7 @@ async function appendTradeToSheet(trade) {
       '',
       trade.note || '',
     ];
+
     const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!B${nextRow}:K${nextRow}?valueInputOption=USER_ENTERED`;
     const writeRes = await fetch(writeUrl, {
       method: 'PUT',
