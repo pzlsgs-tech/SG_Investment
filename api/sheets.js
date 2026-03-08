@@ -33,31 +33,39 @@ async function appendTradeToSheet(trade) {
   if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) return false;
   try {
     const token = await getAccessToken();
+
+    // First, find the last row with data in the Trades sheet (starting from row 9)
+    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!B15:B200`;
+    const getRes = await fetch(getUrl, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const getData = await getRes.json();
+    const existingRows = getData.values ? getData.values.length : 0;
+    const nextRow = 15 + existingRows; // start from row 9, find next empty row
+
     const row = [
-      '',           // col A empty
-      trade.date,
-      trade.ticker,
-      trade.name || '',
-      trade.action === 'buy' ? '买入' : '卖出',
-      trade.price,
-      trade.units,
-      trade.total,
-      trade.fee || '',
-      '',
-      trade.note || '',
+      '',                                          // A - empty
+      trade.date,                                  // B - 日期
+      trade.ticker,                                // C - 代码
+      trade.name || '',                            // D - 股票名称
+      trade.action === 'buy' ? '买入' : '卖出',    // E - 操作
+      trade.price,                                 // F - 单价
+      trade.units,                                 // G - 单位数
+      trade.total,                                 // H - 总金额
+      trade.fee || '',                             // I - 手续费
+      '',                                          // J - 现价
+      trade.note || '',                            // K - 备注
     ];
 
-    // Use English sheet name "Trades" - rename your sheet tab to this
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-
-    const res = await fetch(url, {
-      method: 'POST',
+    const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!A${nextRow}:K${nextRow}?valueInputOption=USER_ENTERED`;
+    const writeRes = await fetch(writeUrl, {
+      method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [row] }),
     });
-    const result = await res.json();
+    const result = await writeRes.json();
     if (result.error) throw new Error(result.error.message);
-    console.log('Sheets sync OK:', result.updates && result.updates.updatedRange);
+    console.log('Sheets sync OK: row', nextRow);
     return true;
   } catch (e) {
     console.error('Sheets sync error:', e.message);
