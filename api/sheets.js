@@ -34,15 +34,12 @@ async function appendTradeToSheet(trade) {
   try {
     const token = await getAccessToken();
 
-    // Read only column B (日期) rows 10-200 - this column should only have real dates
     const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Trades!B10:B200?valueRenderOption=UNFORMATTED_VALUE`;
     const getRes = await fetch(getUrl, { headers: { 'Authorization': `Bearer ${token}` } });
     const getData = await getRes.json();
     const bValues = getData.values || [];
 
-    // Count rows where B has an actual date string (not formula result)
-    // Dates from App are stored as text "2026-03-07"
-    let lastDataRow = 9; // default: start at row 10 (index 9)
+    let lastDataRow = 9;
     for (let i = 0; i < bValues.length; i++) {
       const v = bValues[i] && bValues[i][0];
       if (v && typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) {
